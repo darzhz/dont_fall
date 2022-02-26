@@ -3,32 +3,53 @@ let poses = [];
 let poseNet;
 let pose;
 let structure;
-let imageState = 'loading';
+let imageState = 'undefined';
 let targetLabel = ['standing','laying','falling'];
 let i;
+let q=0;
 function setup(){
 createCanvas(windowWidth,windowHeight);
 background(155);
 let options = {
     inputs: 34,
-    outputs: 2,
+    outputs: 3,
     task: 'classification',
     debug: 'true',
     learningRate: 0.5
   };
   model = new ml5.neuralNetwork(options);
 i=0;
+/*
 let data = setInterval(()=>{
   loadimg(`data/laying/${i}.png`);
   console.log(i);
   i++
-  if(i>101){
+  if(i>2){//101
     clearInterval(data);
-    model.saveData("data",()=>{
+    model.saveData("dataSample",()=>{
       console.log("model saved");
     })
   }
-},000);
+},1000);
+*/
+}
+function callImages(x,saveMode){
+  console.clear();
+  imageState = targetLabel[x];
+  let data = setInterval(()=>{
+  loadimg(`data/${x}/${i}.png`);
+  console.log(i);
+  i++;
+  if(i>30){
+    clearInterval(data);
+    i=0;
+    if(saveMode){
+      model.saveData("dataSample",()=>{
+      console.log("model saved");
+    });
+    }
+  }
+},1000);
 }
 function drawer(){
   background(0);
@@ -44,7 +65,6 @@ function drawer(){
       fill(255, 0, 0);
       ellipse(x, y, 16, 16);
     }
-    imageState = 'loading';
   }
   //noLoop();
 }
@@ -64,7 +84,6 @@ async function imageReady(){
  await poseNet.on("pose",(results)=>{
     poses = results;
     pose = poses[0].pose;
-    imageState = 'ready';
    // drawer();
     saveData();
   });
@@ -80,7 +99,7 @@ function saveData(){
       let y = pose.keypoints[i].position.y;
       inputs.push(x);
       inputs.push(y);
-      let target = [targetLabel[1]];
+      let target = [imageState];
       model.addData(inputs, target);
     }
   }
