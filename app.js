@@ -10,9 +10,8 @@ let vidinp;
 let poseNet;
 let pose;
 let structure;
-let offset=0;
-let yoffset=0;
-let Neuralnet;
+let neuralNet;
+let Status = 'undefined';
 function setup(){
   createCanvas(windowWidth,windowHeight);
   background(155);
@@ -21,22 +20,51 @@ function setup(){
   poseNet = new ml5.poseNet(vidinp,modelLoaded);
   poseNet.on('pose',receivePose)
  let opt = {
-    input:34,
-    output:2,
     task:'classification',
-    debug:true
+    inputs:34,
+    output:3
   }
-  //neuralNet = new ml5.nueralNetwork(opt);
-  yoffset = 0;
-  xoffset = 0;
+  nn = new ml5.neuralNetwork(opt);
+  const modelDetails = {
+    model: 'model2/model.json',
+    metadata: 'model2/model_meta.json',
+    weights: 'model2/model.weights.bin'
+  }
+  nn.load(modelDetails,customMod);
 }
-function mouseClicked(){
-  scale(1,-1);
-  translate(0,width)
-  calcOffset(mouseX,mouseY);
+function customMod(){
+  console.log("custom model loaded");
+  classifyData();
 }
-function calcOffset(x,y){
-  offset = dist(x,y,pose.nose.x,pose.nose.y)
+function classifyData() {
+  if (pose) {
+    let inputs = [];
+    for (let i = 0; i < pose.keypoints.length; i++) {
+      let x = pose.keypoints[i].position.x;
+      let y = pose.keypoints[i].position.y;
+      inputs.push(x);
+      inputs.push(y);
+    }
+    nn.classify(inputs, resolveResult);
+  } else {
+    setTimeout(classifyData, 200);
+  }
+}
+function resolveResult(err,res){
+  console.log(res[0]);
+  let key;
+  //i made a stupid mistake while naming data
+  if(res[0].label=='falling'){
+    key = 'standing';
+  }
+  else if(res[0].label=='standing'){
+    key = 'falling';
+  }else{
+    key = res[0].label
+  }
+  //if (res[0].confidence > 0.25) {
+    Status = key.toUpperCase()+" "+parseFloat(res[0].confidence);
+  //}
 }
 function receivePose(poses){
 if(poses.length>0){
@@ -49,7 +77,9 @@ function modelLoaded(){
   console.log("poseNet is online")
 }
 function draw(){
-  //background(0);
+  classifyData();
+  push();
+  background(0);
   translate(width,0);
   scale(-1,1);
   
@@ -57,7 +87,7 @@ function draw(){
   image(vidinp,0,0)
   if(pose){
     fill(175,176,0);
-  ellipse(pose.nose.x-xoffset,pose.nose.y-yoffset,10,10);
+  ellipse(pose.nose.x,pose.nose.y,10,10);
   for (let i = 0; i < pose.keypoints.length; i++) {
       let x = pose.keypoints[i].position.x;
       let y = pose.keypoints[i].position.y;
@@ -65,4 +95,9 @@ function draw(){
       ellipse(x, y, 16, 16);
     }
   }
+  pop();
+  textSize(26);
+  fill(255)
+  textAlign(CENTER, CENTER);
+  text(Status, width / 2, height*.95);
 }
