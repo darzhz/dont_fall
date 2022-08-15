@@ -1,5 +1,3 @@
 # dont_fall
-just don't fall
-
-<h3>A crude Fall detector using ml5 library and posenet</h3>
+A Fall detector and detection model built using ml5 library and posenet
 
